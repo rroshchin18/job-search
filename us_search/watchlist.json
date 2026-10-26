@@ -1,0 +1,17 @@
+{
+  "greenhouse": [
+    "tenableinc", "databricks", "datadog", "twilio", "gitlab", "okta", "cloudflare",
+    "elastic", "mongodb", "samsara", "figma", "airtable", "duolingo", "coursera",
+    "instructure", "asana", "pagerduty", "gusto", "affirm", "robinhood", "chime",
+    "brex", "toast", "lattice", "rubrik", "hubspot", "snyk", "smartsheet", "zapier",
+    "contentful", "amplitude", "mixpanel", "launchdarkly", "procore", "veeva"
+  ],
+  "ashby": [
+    "ashby", "horizon3ai", "ramp", "linear", "posthog", "notion", "vanta", "drata",
+    "sentilink", "retool", "deel", "clay", "replit", "vercel", "supabase"
+  ],
+  "lever": [
+    "gohighlevel", "spotify", "palantir", "outreach", "plaid", "netflix", "highspot",
+    "gong"
+  ]
+}
