@@ -22,7 +22,8 @@ TITLE_INCLUDE = re.compile(
 TITLE_EXCLUDE = re.compile(
     r"\b(intern|internship|coordinator|associate|assistant|junior|jr\.?|entry|"
     r"specialist i\b|machine learning|deep learning|ml engineer|data scientist|"
-    r"software engineer|engineer,? (ml|machine)|recruiter|sales development)\b",
+    r"software engineer|(backend|frontend|full[- ]?stack|platform|data|ml|security|site reliability) engineer|"
+    r"engineer,? (ml|machine)|recruiter|sales development|account executive|account manager)\b",
     re.I,
 )
 REMOTE_US = re.compile(r"remote|united states|\bus\b|usa|u\.s\.|anywhere|north america", re.I)
@@ -30,7 +31,8 @@ NEAR_HOME = re.compile(r"baltimore|columbia,? md|maryland|washington,? d\.?c|arl
                        r"reston|mclean|tysons|wilmington|annapolis|bethesda|rockville", re.I)
 NOT_US = re.compile(r"\b(uk|united kingdom|london|india|bangalore|bengaluru|germany|berlin|"
                     r"ireland|dublin|canada only|australia|singapore|japan|emea|apac|latam|"
-                    r"brazil|mexico|poland|netherlands|france|spain|israel|tel aviv)\b", re.I)
+                    r"brazil|mexico|poland|netherlands|france|spain|israel|tel aviv|"
+                    r"united arab emirates|uae|dubai|gcc|middle east|saudi|qatar|philippines|korea|china)\b", re.I)
 CONTRACT = re.compile(r"contract|temporary|temp\b|fixed[- ]term|freelance|part[- ]time", re.I)
 PAY_FLOOR = 95000
 
