@@ -35,6 +35,13 @@ NOT_US = re.compile(r"\b(uk|united kingdom|london|india|bangalore|bengaluru|germ
                     r"united arab emirates|uae|dubai|gcc|middle east|saudi|qatar|philippines|korea|china|canada|montreal|toronto|vancouver)\b", re.I)
 CONTRACT = re.compile(r"contract|temporary|temp\b|fixed[- ]term|freelance|part[- ]time", re.I)
 PAY_FLOOR = 95000
+# Roles that require (or require the ability to obtain) a security clearance.
+# Public Trust is a background check, not a clearance, so it is not excluded.
+CLEARANCE = re.compile(
+    r"\b(ts/sci|top secret|polygraph)\b|"
+    r"\b(secret|security|government|dod|federal|active)\s+clearance\b|"
+    r"\bclearance\s+(is\s+)?(required|needed|eligib\w*)\b|"
+    r"\b(obtain|hold|maintain)\w*\s+(an?\s+)?(active\s+)?(secret|clearance)\b", re.I)
 
 
 def get(url):
@@ -183,6 +190,8 @@ def keep(job, cutoff):
           and not NEAR_HOME.search(loc)):
         # "City, State, USA" with no remote marker is an onsite role elsewhere
         return False, "onsite, not near home"
+    if CLEARANCE.search(job.get("description", "")) or CLEARANCE.search(t):
+        return False, "security clearance required"
     if job["pay"] and job["pay"][1] and job["pay"][1] < PAY_FLOOR:
         return False, "pay under floor"
     if job["posted"] and job["posted"] < cutoff:
