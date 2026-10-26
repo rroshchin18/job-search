@@ -23,7 +23,7 @@ TITLE_EXCLUDE = re.compile(
     r"\b(intern|internship|coordinator|associate|assistant|junior|jr\.?|entry|"
     r"specialist i\b|machine learning|deep learning|ml engineer|data scientist|"
     r"software engineer|(backend|frontend|full[- ]?stack|platform|data|ml|security|site reliability) engineer|"
-    r"engineer,? (ml|machine)|recruiter|sales development|account executive|account manager)\b",
+    r"engineer,? (ml|machine)|recruiter|sales development|account executive|account manager|solutions? architect|personal train\w*)\b",
     re.I,
 )
 REMOTE_US = re.compile(r"remote|united states|\bus\b|usa|u\.s\.|anywhere|north america", re.I)
@@ -32,7 +32,7 @@ NEAR_HOME = re.compile(r"baltimore|columbia,? md|maryland|washington,? d\.?c|arl
 NOT_US = re.compile(r"\b(uk|united kingdom|london|india|bangalore|bengaluru|germany|berlin|"
                     r"ireland|dublin|canada only|australia|singapore|japan|emea|apac|latam|"
                     r"brazil|mexico|poland|netherlands|france|spain|israel|tel aviv|"
-                    r"united arab emirates|uae|dubai|gcc|middle east|saudi|qatar|philippines|korea|china)\b", re.I)
+                    r"united arab emirates|uae|dubai|gcc|middle east|saudi|qatar|philippines|korea|china|canada|montreal|toronto|vancouver)\b", re.I)
 CONTRACT = re.compile(r"contract|temporary|temp\b|fixed[- ]term|freelance|part[- ]time", re.I)
 PAY_FLOOR = 95000
 
@@ -120,7 +120,47 @@ def ashby(slug):
     return out
 
 
-FETCHERS = {"greenhouse": greenhouse, "lever": lever, "ashby": ashby}
+def smartrecruiters(slug):
+    base = f"https://api.smartrecruiters.com/v1/companies/{slug}/postings"
+    postings, offset = [], 0
+    while True:
+        page = get(f"{base}?limit=100&offset={offset}")
+        postings += page.get("content", [])
+        offset += 100
+        if offset >= page.get("totalFound", 0) or offset >= 3000:
+            break
+    out = []
+    for p in postings:
+        title = p.get("name", "").strip()
+        locd = p.get("location") or {}
+        loc = locd.get("fullLocation") or ", ".join(
+            x for x in (locd.get("city"), locd.get("region"), locd.get("country")) if x)
+        if locd.get("remote"):
+            loc = f"Remote ({loc})" if loc else "Remote"
+        else:  # onsite or hybrid: only useful if near home
+            loc = f"ONSITE: {loc}"
+        job = dict(company=slug, ats="smartrecruiters", title=title, location=loc,
+            url=f"https://jobs.smartrecruiters.com/{slug}/{p.get('id')}",
+            posted=parse_dt(p.get("releasedDate")), pay=None,
+            employment=(p.get("typeOfEmployment") or {}).get("label", "") or "",
+            description="")
+        # Only pull the full ad for titles that could pass, to keep requests low.
+        if TITLE_INCLUDE.search(title) and not TITLE_EXCLUDE.search(title):
+            try:
+                d = get(f"{base}/{p.get('id')}")
+                job["url"] = d.get("postingUrl") or job["url"]
+                secs = (d.get("jobAd") or {}).get("sections") or {}
+                job["description"] = " ".join(
+                    strip_html((secs.get(k) or {}).get("text", ""))
+                    for k in ("jobDescription", "qualifications", "additionalInformation"))
+            except Exception:  # noqa: BLE001
+                pass
+        out.append(job)
+    return out
+
+
+FETCHERS = {"greenhouse": greenhouse, "lever": lever, "ashby": ashby,
+            "smartrecruiters": smartrecruiters}
 
 
 def keep(job, cutoff):
@@ -134,8 +174,15 @@ def keep(job, cutoff):
         return False, "not full-time"
     if NOT_US.search(loc) and not REMOTE_US.search(loc.replace("Remote", "")):
         return False, "outside US"
-    if not (REMOTE_US.search(loc) or NEAR_HOME.search(loc)):
+    if loc.startswith("ONSITE:"):
+        if not NEAR_HOME.search(loc):
+            return False, "onsite, not near home"
+    elif not (REMOTE_US.search(loc) or NEAR_HOME.search(loc)):
         return False, "location"
+    elif ("," in loc and not re.search(r"remote", loc, re.I)
+          and not NEAR_HOME.search(loc)):
+        # "City, State, USA" with no remote marker is an onsite role elsewhere
+        return False, "onsite, not near home"
     if job["pay"] and job["pay"][1] and job["pay"][1] < PAY_FLOOR:
         return False, "pay under floor"
     if job["posted"] and job["posted"] < cutoff:
